@@ -1,0 +1,16 @@
+# Node
+node_modules/
+dist/
+build/
+.env
+
+# Python/Venv
+.venv/
+venv/
+__pycache__/
+
+# Mac
+.DS_Store
+
+# Vercel
+.vercel/
