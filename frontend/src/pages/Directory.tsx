@@ -91,7 +91,7 @@ const Directory = () => {
                       
                       <div className="text-center flex-grow">
                         <h3 className="text-xl font-bold text-gray-900 truncate" title={profile.user?.name}>{profile.user?.name}</h3>
-                        <p className="text-blue-600 font-medium text-sm mb-4">Class of {profile.batch} • {profile.branch}</p>
+                        <p className="text-blue-600 font-medium text-sm mb-4">Batch {profile.batch} - {profile.graduationYear} • {profile.branch}</p>
                         
                         <div className="space-y-2 text-sm text-gray-600 text-left mb-6">
                           <div className="flex items-center">

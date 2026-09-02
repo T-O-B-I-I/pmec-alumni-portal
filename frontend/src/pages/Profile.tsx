@@ -273,7 +273,7 @@ const Profile = () => {
                   ? (formData.branch ? `Faculty - ${formData.branch}` : 'Department not set')
                   : (formData.branch ? `B.Tech - ${formData.branch}` : 'Branch not set')
                 }
-                {user?.role !== 'mentor' && ` • ${formData.batch ? `Class of ${formData.batch}` : 'Batch not set'}`}
+                {user?.role !== 'mentor' && ` • ${formData.batch ? `Batch ${formData.batch} - ${formData.graduationYear || 'Present'}` : 'Batch not set'}`}
               </p>
             </div>
             <div className="flex gap-3">

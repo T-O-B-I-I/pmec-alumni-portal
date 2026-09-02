@@ -115,7 +115,7 @@ const PublicProfile = () => {
           <div className="pt-20 px-8 pb-8">
             <h1 className="text-3xl font-bold text-gray-900">{profile.user.name}</h1>
             <p className="text-gray-500 font-medium text-lg mt-1">
-              B.Tech • {profile.branch} • Class of {profile.batch}
+              B.Tech • {profile.branch} • Batch {profile.batch} - {profile.graduationYear}
             </p>
 
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
