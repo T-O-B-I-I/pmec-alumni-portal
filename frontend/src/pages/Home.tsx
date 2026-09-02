@@ -75,9 +75,7 @@ const Home = () => {
               <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4 text-indigo-600">
                 <Trophy className="w-8 h-8" />
               </div>
-              <h3 className="text-4xl font-bold text-gray-900 mb-2">
-                {stats.companiesCount > 0 ? stats.companiesCount + '+' : '0'}
-              </h3>
+              <h3 className="text-4xl font-bold text-gray-900 mb-2">50+</h3>
               <p className="text-lg text-gray-600 font-medium">Top Tech Companies</p>
             </div>
             

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Save, MapPin, Briefcase, GraduationCap, Share2, Users } from 'lucide-react';
+import { Camera, Save, MapPin, Briefcase, GraduationCap, Share2, Users, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
-  const { user, token } = useAuth();
+  const { user, token, logout } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('personal');
   const [loading, setLoading] = useState(false);
   const [mentors, setMentors] = useState<any[]>([]);
@@ -156,6 +158,29 @@ const Profile = () => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (window.confirm("Are you absolutely sure you want to delete your account? This action cannot be undone.")) {
+      try {
+        const res = await fetch('/api/auth/me', {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (res.ok) {
+          alert("Your account has been successfully deleted.");
+          logout();
+          navigate('/');
+        } else {
+          const data = await res.json();
+          alert(data.message || "Failed to delete account");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("An error occurred while deleting your account.");
+      }
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-100">
@@ -203,6 +228,13 @@ const Profile = () => {
                 className="flex items-center bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50"
               >
                 <Save className="w-4 h-4 mr-2" /> {loading ? 'Saving...' : 'Save Profile'}
+              </button>
+              <button 
+                onClick={handleDeleteAccount}
+                className="flex items-center bg-red-50 text-red-600 border border-red-200 px-5 py-2.5 rounded-lg font-medium hover:bg-red-100 transition-colors shadow-sm"
+                title="Delete Account"
+              >
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
           </div>

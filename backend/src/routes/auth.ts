@@ -2,8 +2,36 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+import AlumniProfile from '../models/AlumniProfile';
+import { auth } from '../middleware/auth';
 
 const router = express.Router();
+
+// Delete Own Account Route
+router.delete('/me', auth, async (req, res) => {
+  try {
+    const userId = (req as any).user.id;
+    
+    // Check if it's the hardcoded superadmin
+    if (userId === 'superadmin-000') {
+      return res.status(403).json({ message: 'Cannot delete super admin account' });
+    }
+
+    // Delete user from User model
+    const user = await User.findByIdAndDelete(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Delete profile if exists
+    await AlumniProfile.findOneAndDelete({ user: userId });
+
+    res.json({ message: 'Account and associated profile deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting account:', err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
 
 // Register Route
 router.post('/register', async (req, res) => {
