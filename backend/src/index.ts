@@ -17,7 +17,7 @@ import alumniRoutes from './routes/alumniRoutes';
 import adminRoutes from './routes/adminRoutes';
 import mentorRoutes from './routes/mentorRoutes';
 import superAdminRoutes from './routes/superAdminRoutes';
-import siteContentRoutes from './routes/siteContentRoutes';
+import contentRoutes from './routes/contentRoutes';
 import noticeRoutes from './routes/noticeRoutes';
 import path from 'path';
 
@@ -35,7 +35,7 @@ app.use('/api/alumni', alumniRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/mentors', mentorRoutes);
 app.use('/api/superadmin', superAdminRoutes);
-app.use('/api/content', siteContentRoutes);
+app.use('/api/content', contentRoutes);
 app.use('/api/notices', noticeRoutes);
 
 app.get('/api/health', (req, res) => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Users, BookOpen, UserCheck, Filter, Search, Download, FileText, Plus, Trash2 } from 'lucide-react';
+import { Users, BookOpen, UserCheck, Filter, Search, Download, Megaphone, Trash2 } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { user, token } = useAuth();
@@ -11,11 +11,11 @@ const AdminDashboard = () => {
   const [alumni, setAlumni] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  
-  const [activeTab, setActiveTab] = useState<'directory' | 'notices'>('directory');
+
+  // Notice Board state
   const [notices, setNotices] = useState<any[]>([]);
   const [newNotice, setNewNotice] = useState({ title: '', content: '' });
-  const [isSubmittingNotice, setIsSubmittingNotice] = useState(false);
+  const [submittingNotice, setSubmittingNotice] = useState(false);
 
   useEffect(() => {
     if (!user || !['coordinator', 'superadmin'].includes(user.role)) {
@@ -90,21 +90,19 @@ const AdminDashboard = () => {
   const handleCreateNotice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNotice.title || !newNotice.content) return;
-    
-    setIsSubmittingNotice(true);
+    setSubmittingNotice(true);
     try {
       const res = await fetch('/api/notices', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}` 
         },
         body: JSON.stringify(newNotice)
       });
-      
       if (res.ok) {
-        const data = await res.json();
-        setNotices([data, ...notices]);
+        const created = await res.json();
+        setNotices([created, ...notices]);
         setNewNotice({ title: '', content: '' });
       } else {
         alert('Failed to create notice');
@@ -113,19 +111,17 @@ const AdminDashboard = () => {
       console.error(err);
       alert('Error creating notice');
     } finally {
-      setIsSubmittingNotice(false);
+      setSubmittingNotice(false);
     }
   };
 
   const handleDeleteNotice = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this notice?')) return;
-    
     try {
       const res = await fetch(`/api/notices/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
       if (res.ok) {
         setNotices(notices.filter(n => n._id !== id));
       } else {
@@ -173,29 +169,80 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200 mb-8">
-          <button
-            onClick={() => setActiveTab('directory')}
-            className={`py-4 px-6 font-medium text-sm border-b-2 transition-colors ${activeTab === 'directory' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-          >
-            <div className="flex items-center">
-              <Users className="w-4 h-4 mr-2" />
-              Alumni Directory
+        {/* Notice Board Management */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-12">
+          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center">
+              <Megaphone className="w-5 h-5 mr-2 text-blue-600" /> Manage Notices
+            </h2>
+          </div>
+          <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-1 border-r border-gray-100 pr-0 lg:pr-8">
+              <h3 className="font-semibold text-gray-900 mb-4">Post New Notice</h3>
+              <form onSubmit={handleCreateNotice} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                  <input
+                    type="text"
+                    required
+                    value={newNotice.title}
+                    onChange={(e) => setNewNotice({ ...newNotice, title: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g. Alumni Meetup 2026"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Content / Details</label>
+                  <textarea
+                    required
+                    rows={4}
+                    value={newNotice.content}
+                    onChange={(e) => setNewNotice({ ...newNotice, content: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Provide details about the event..."
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={submittingNotice}
+                  className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+                >
+                  {submittingNotice ? 'Posting...' : 'Post Notice'}
+                </button>
+              </form>
             </div>
-          </button>
-          <button
-            onClick={() => setActiveTab('notices')}
-            className={`py-4 px-6 font-medium text-sm border-b-2 transition-colors ${activeTab === 'notices' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-          >
-            <div className="flex items-center">
-              <FileText className="w-4 h-4 mr-2" />
-              Notice Board
+            
+            <div className="lg:col-span-2 space-y-4">
+              <h3 className="font-semibold text-gray-900 mb-4">Active Notices</h3>
+              {notices.length === 0 ? (
+                <p className="text-gray-500">No notices posted yet.</p>
+              ) : (
+                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                  {notices.map(notice => (
+                    <div key={notice._id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex justify-between items-start">
+                      <div>
+                        <h4 className="font-bold text-gray-900">{notice.title}</h4>
+                        <p className="text-sm text-gray-500 mb-2">
+                          {new Date(notice.date).toLocaleDateString()} • By {notice.author?.name || 'Admin'}
+                        </p>
+                        <p className="text-gray-700 text-sm whitespace-pre-wrap">{notice.content}</p>
+                      </div>
+                      <button 
+                        onClick={() => handleDeleteNotice(notice._id)}
+                        className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition ml-4 flex-shrink-0"
+                        title="Delete Notice"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </button>
+          </div>
         </div>
 
-        {activeTab === 'directory' && (
+        {/* Directory Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
             <h2 className="text-xl font-bold text-gray-900">Alumni Directory</h2>
@@ -312,88 +359,6 @@ const AdminDashboard = () => {
             </table>
           </div>
         </div>
-        )}
-
-        {activeTab === 'notices' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Create Notice Form */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                <Plus className="w-5 h-5 mr-2 text-blue-600" /> Create Notice
-              </h2>
-              <form onSubmit={handleCreateNotice}>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notice Title</label>
-                  <input
-                    type="text"
-                    required
-                    value={newNotice.title}
-                    onChange={(e) => setNewNotice({...newNotice, title: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g. Annual Alumni Meet 2026"
-                  />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Details / Description</label>
-                  <textarea
-                    required
-                    rows={5}
-                    value={newNotice.content}
-                    onChange={(e) => setNewNotice({...newNotice, content: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Provide event details, dates, etc."
-                  ></textarea>
-                </div>
-                <button
-                  type="submit"
-                  disabled={isSubmittingNotice}
-                  className="w-full bg-blue-600 text-white font-medium py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-                >
-                  {isSubmittingNotice ? 'Publishing...' : 'Publish Notice'}
-                </button>
-              </form>
-            </div>
-          </div>
-
-          {/* List Notices */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-6 border-b border-gray-100">
-                <h2 className="text-lg font-bold text-gray-900 flex items-center">
-                  <FileText className="w-5 h-5 mr-2 text-blue-600" /> Active Notices
-                </h2>
-              </div>
-              <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
-                {notices.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500">
-                    No notices published yet.
-                  </div>
-                ) : (
-                  notices.map((notice) => (
-                    <div key={notice._id} className="p-6 hover:bg-gray-50 transition-colors">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-bold text-gray-900 text-lg">{notice.title}</h3>
-                        <button 
-                          onClick={() => handleDeleteNotice(notice._id)}
-                          className="text-red-500 hover:text-red-700 p-1 rounded-md hover:bg-red-50 transition"
-                          title="Delete Notice"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <p className="text-xs text-gray-500 mb-3 font-medium">
-                        Posted by {notice.author?.name || 'Coordinator'} • {new Date(notice.createdAt).toLocaleDateString()}
-                      </p>
-                      <p className="text-gray-700 whitespace-pre-wrap">{notice.content}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-        )}
       </div>
     </div>
   );

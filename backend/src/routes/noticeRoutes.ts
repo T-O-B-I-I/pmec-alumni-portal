@@ -1,13 +1,13 @@
 import express from 'express';
-import { auth, authorizeRole } from '../middleware/auth';
 import Notice from '../models/Notice';
+import { auth, authorizeRole } from '../middleware/auth';
 
 const router = express.Router();
 
 // Get all notices (Public)
 router.get('/', async (req, res) => {
   try {
-    const notices = await Notice.find().sort({ createdAt: -1 }).populate('author', 'name role');
+    const notices = await Notice.find().sort({ date: -1 }).populate('author', 'name email');
     res.json(notices);
   } catch (err) {
     console.error(err);
@@ -15,23 +15,20 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Create a new notice (Coordinator or Superadmin only)
+// Create a notice (Coordinator/SuperAdmin)
 router.post('/', auth, authorizeRole('coordinator', 'superadmin'), async (req, res) => {
   try {
     const { title, content } = req.body;
-    const authorId = (req as any).user.userId;
-
+    const author = (req as any).user.userId;
+    
     const notice = new Notice({
       title,
       content,
-      author: authorId
+      author,
+      date: new Date()
     });
 
     await notice.save();
-    
-    // Populate author before returning
-    await notice.populate('author', 'name role');
-    
     res.status(201).json(notice);
   } catch (err) {
     console.error(err);
@@ -39,14 +36,16 @@ router.post('/', auth, authorizeRole('coordinator', 'superadmin'), async (req, r
   }
 });
 
-// Delete a notice (Coordinator or Superadmin only)
+// Delete a notice (Coordinator/SuperAdmin)
 router.delete('/:id', auth, authorizeRole('coordinator', 'superadmin'), async (req, res) => {
   try {
-    const notice = await Notice.findByIdAndDelete(req.params.id);
+    const notice = await Notice.findById(req.params.id);
     if (!notice) {
       return res.status(404).json({ message: 'Notice not found' });
     }
-    res.json({ message: 'Notice deleted successfully' });
+
+    await Notice.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Notice removed' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server Error' });
