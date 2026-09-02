@@ -100,6 +100,11 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Slider Section */}
+      <section className="bg-white py-20">
+        <AlumniSlider />
+      </section>
+
       {/* Notice Board Section */}
       <section className="py-20 bg-gray-50 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -145,11 +150,6 @@ const Home = () => {
             )}
           </div>
         </div>
-      </section>
-
-      {/* Slider Section */}
-      <section className="bg-white pb-10">
-        <AlumniSlider />
       </section>
 
       {/* Gallery Slider Section */}
