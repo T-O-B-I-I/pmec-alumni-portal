@@ -37,9 +37,9 @@ export interface IAlumniProfile extends Document {
 
 const AlumniProfileSchema: Schema = new Schema({
   user: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
-  registrationNumber: { type: String, required: true },
-  batch: { type: String, required: true },
-  branch: { type: String, required: true },
+  registrationNumber: { type: String },
+  batch: { type: String },
+  branch: { type: String },
   graduationYear: { type: String },
   professionalDetails: {
     jobProfile: { type: String },

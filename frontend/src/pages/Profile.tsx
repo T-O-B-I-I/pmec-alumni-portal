@@ -147,6 +147,9 @@ const Profile = () => {
         
         if (formData.photo) {
           submitData.append('photo', formData.photo);
+        } else if (formData.photoUrl && !formData.photoUrl.startsWith('/uploads')) {
+          // Send photoUrl if it's an external link
+          submitData.append('photoUrl', formData.photoUrl);
         }
 
         const res = await fetch('/api/mentors/profile', {
@@ -183,6 +186,9 @@ const Profile = () => {
         
         if (formData.photo) {
           submitData.append('photo', formData.photo);
+        } else if (formData.photoUrl && !formData.photoUrl.startsWith('/uploads')) {
+          // Send photoUrl if it's an external link
+          submitData.append('photoUrl', formData.photoUrl);
         }
 
         const res = await fetch('/api/alumni/profile', {
@@ -259,6 +265,20 @@ const Profile = () => {
                 onChange={handleFileChange} 
                 className="hidden" 
                 accept="image/*"
+              />
+            </div>
+            {/* Link input for photo */}
+            <div className="absolute top-4 right-8 bg-white p-2 rounded-lg shadow-sm border border-gray-200">
+              <label className="text-xs text-gray-500 block mb-1">Or image link URL:</label>
+              <input 
+                type="text"
+                placeholder="https://example.com/photo.jpg"
+                value={formData.photoUrl.startsWith('/uploads') ? '' : formData.photoUrl}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, photoUrl: e.target.value, photo: null }));
+                  setPhotoPreview(null);
+                }}
+                className="text-sm border border-gray-300 rounded px-2 py-1 w-48 focus:outline-none focus:border-blue-500"
               />
             </div>
           </div>

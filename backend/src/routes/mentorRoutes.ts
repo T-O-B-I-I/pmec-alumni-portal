@@ -56,6 +56,8 @@ router.post('/profile', auth, authorizeRole('mentor'), upload.single('photo'), a
 
     if (req.file) {
       updateData.photoUrl = `/uploads/${req.file.filename}`;
+    } else if (req.body.photoUrl) {
+      updateData.photoUrl = req.body.photoUrl;
     }
     
     if (profile) {

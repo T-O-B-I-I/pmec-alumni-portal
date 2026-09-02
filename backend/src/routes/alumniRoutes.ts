@@ -93,11 +93,18 @@ router.post('/profile', auth, upload.single('photo'), async (req, res) => {
     };
 
     // Extract basic fields
-    if (req.body.registrationNumber) profileData.registrationNumber = req.body.registrationNumber;
-    if (req.body.batch) profileData.batch = req.body.batch;
-    if (req.body.branch) profileData.branch = req.body.branch;
-    if (req.body.graduationYear) profileData.graduationYear = req.body.graduationYear;
-    if (req.body.mentorId) profileData.mentorId = req.body.mentorId;
+    if (req.body.registrationNumber !== undefined) profileData.registrationNumber = req.body.registrationNumber;
+    if (req.body.batch !== undefined) profileData.batch = req.body.batch;
+    if (req.body.branch !== undefined) profileData.branch = req.body.branch;
+    if (req.body.graduationYear !== undefined) profileData.graduationYear = req.body.graduationYear;
+    
+    if (req.body.mentorId !== undefined) {
+      if (req.body.mentorId === '') {
+        profileData.$unset = { mentorId: 1 };
+      } else {
+        profileData.mentorId = req.body.mentorId;
+      }
+    }
     
     // Extract nested objects
     const profDetails = safeParse(req.body.professionalDetails);
@@ -113,19 +120,28 @@ router.post('/profile', auth, upload.single('photo'), async (req, res) => {
     if (req.file) {
       // Create a URL path relative to the server
       profileData.photoUrl = `/uploads/${req.file.filename}`;
+    } else if (req.body.photoUrl) {
+      profileData.photoUrl = req.body.photoUrl;
     }
     
     let profile = await AlumniProfile.findOne({ user: userId });
     
     if (profile) {
       // Update
+      const updateObj: any = { $set: profileData };
+      if (profileData.$unset) {
+        updateObj.$unset = profileData.$unset;
+        delete profileData.$unset;
+      }
+      
       profile = await AlumniProfile.findOneAndUpdate(
         { user: userId },
-        { $set: profileData },
+        updateObj,
         { new: true }
       );
     } else {
       // Create
+      delete profileData.$unset;
       profile = new AlumniProfile(profileData);
       await profile.save();
     }
