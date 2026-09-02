@@ -89,7 +89,7 @@ const Mentors = () => {
                     <div className="px-6 pb-6 relative flex-grow flex flex-col">
                       <div className="-mt-12 mb-4 flex justify-center">
                         <img 
-                          src={'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=500&q=80'} 
+                          src={profile.photoUrl || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=500&q=80'} 
                           alt={profile.user?.name}
                           className="w-24 h-24 rounded-full border-4 border-white object-cover bg-white shadow-sm"
                         />

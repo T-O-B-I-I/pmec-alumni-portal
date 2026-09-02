@@ -138,21 +138,31 @@ const Profile = () => {
     try {
       if (user?.role === 'mentor') {
         // Submit Mentor Profile
+        const submitData = new FormData();
+        submitData.append('yearOfJoining', formData.yearOfJoining);
+        submitData.append('mobileNumber', formData.mobileNumber);
+        submitData.append('branch', formData.branch);
+        submitData.append('specialization', formData.specialization);
+        
+        if (formData.photo) {
+          submitData.append('photo', formData.photo);
+        }
+
         const res = await fetch('/api/mentors/profile', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({
-            yearOfJoining: formData.yearOfJoining,
-            mobileNumber: formData.mobileNumber,
-            branch: formData.branch,
-            specialization: formData.specialization
-          })
+          body: submitData
         });
         
         if (res.ok) {
+          const data = await res.json();
+          setFormData(prev => ({
+            ...prev,
+            photoUrl: data.photoUrl || prev.photoUrl,
+            photo: null
+          }));
           alert('Mentor Profile saved successfully!');
         } else {
           alert('Failed to save mentor profile');

@@ -1,9 +1,23 @@
 import express from 'express';
+import multer from 'multer';
+import path from 'path';
 import User from '../models/User';
 import MentorProfile from '../models/MentorProfile';
 import { auth, authorizeRole } from '../middleware/auth';
 
 const router = express.Router();
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage: storage });
 
 // Get mentor profile
 router.get('/profile', auth, authorizeRole('mentor'), async (req, res) => {
@@ -25,27 +39,33 @@ router.get('/profile', auth, authorizeRole('mentor'), async (req, res) => {
 });
 
 // Update mentor profile
-router.post('/profile', auth, authorizeRole('mentor'), async (req, res) => {
+router.post('/profile', auth, authorizeRole('mentor'), upload.single('photo'), async (req, res) => {
   try {
     const userId = (req as any).user.userId;
     const { yearOfJoining, mobileNumber, branch, specialization } = req.body;
 
     let profile = await MentorProfile.findOne({ user: userId });
     
+    const updateData: any = {
+      user: userId,
+      yearOfJoining,
+      mobileNumber,
+      branch,
+      specialization
+    };
+
+    if (req.file) {
+      updateData.photoUrl = `http://localhost:5000/uploads/${req.file.filename}`;
+    }
+    
     if (profile) {
-      profile.yearOfJoining = yearOfJoining;
-      profile.mobileNumber = mobileNumber;
-      profile.branch = branch;
-      profile.specialization = specialization;
-      await profile.save();
+      profile = await MentorProfile.findOneAndUpdate(
+        { user: userId },
+        { $set: updateData },
+        { new: true }
+      );
     } else {
-      profile = new MentorProfile({
-        user: userId,
-        yearOfJoining,
-        mobileNumber,
-        branch,
-        specialization
-      });
+      profile = new MentorProfile(updateData);
       await profile.save();
     }
 
