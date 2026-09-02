@@ -99,4 +99,18 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get mentor profile by User ID (Public)
+router.get('/public/:userId', async (req, res) => {
+  try {
+    const profile = await MentorProfile.findOne({ user: req.params.userId }).populate('user', 'name email');
+    if (!profile) {
+      return res.status(404).json({ message: 'Mentor profile not found' });
+    }
+    res.json(profile);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
 export default router;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Download, Share2, MapPin, Briefcase, GraduationCap, Link, Mail, Phone, MessageCircle } from 'lucide-react';
+import { Download, Share2, MapPin, Briefcase, GraduationCap, Link, Mail, Phone, MessageCircle, X, Users } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 
 const PublicProfile = () => {
@@ -9,6 +9,10 @@ const PublicProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const profileRef = useRef<HTMLDivElement>(null);
+  
+  const [showMentorModal, setShowMentorModal] = useState(false);
+  const [mentorData, setMentorData] = useState<any>(null);
+  const [mentorLoading, setMentorLoading] = useState(false);
 
   useEffect(() => {
     fetch(`/api/alumni/${id}`)
@@ -42,6 +46,24 @@ const PublicProfile = () => {
     alert('Profile link copied to clipboard!');
   };
 
+  const handleViewMentor = async () => {
+    setShowMentorModal(true);
+    if (!mentorData && profile?.mentorId) {
+      setMentorLoading(true);
+      try {
+        const res = await fetch(`/api/mentors/public/${profile.mentorId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setMentorData(data);
+        }
+      } catch (err) {
+        console.error('Failed to load mentor data', err);
+      } finally {
+        setMentorLoading(false);
+      }
+    }
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading Profile...</div>;
   if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
   if (!profile) return null;
@@ -57,6 +79,14 @@ const PublicProfile = () => {
           >
             <Share2 className="w-4 h-4 mr-2" /> Share Link
           </button>
+          {profile.mentorId && (
+            <button 
+              onClick={handleViewMentor}
+              className="flex items-center bg-teal-50 border border-teal-200 text-teal-700 px-4 py-2 rounded-lg hover:bg-teal-100 transition shadow-sm font-medium"
+            >
+              <Users className="w-4 h-4 mr-2" /> View Mentor
+            </button>
+          )}
           <button 
             onClick={handleDownloadPDF}
             className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition shadow-sm"
@@ -172,6 +202,85 @@ const PublicProfile = () => {
         </div>
 
       </div>
+
+      {/* Mentor Modal */}
+      {showMentorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                <Users className="w-5 h-5 mr-2 text-blue-600" />
+                Alumni Mentor
+              </h3>
+              <button 
+                onClick={() => setShowMentorModal(false)}
+                className="text-gray-400 hover:text-gray-600 focus:outline-none"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto">
+              {mentorLoading ? (
+                <div className="flex justify-center py-10">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+                </div>
+              ) : mentorData ? (
+                <div className="flex flex-col items-center text-center">
+                  <img 
+                    src={mentorData.photoUrl || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=500&q=80'} 
+                    alt={mentorData.user?.name}
+                    className="w-32 h-32 rounded-full object-cover border-4 border-blue-50 shadow-md mb-4"
+                  />
+                  <h2 className="text-2xl font-bold text-gray-900">{mentorData.user?.name}</h2>
+                  <p className="text-blue-600 font-medium mb-1">PMEC Faculty</p>
+                  
+                  <div className="w-full mt-6 space-y-4 text-left border-t border-gray-100 pt-6">
+                    <div className="flex items-start">
+                      <GraduationCap className="w-5 h-5 text-gray-400 mt-0.5 mr-3 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Department</p>
+                        <p className="text-gray-600">{mentorData.branch || 'N/A'}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start">
+                      <Briefcase className="w-5 h-5 text-gray-400 mt-0.5 mr-3 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Specialization</p>
+                        <p className="text-gray-600">{mentorData.specialization || 'N/A'}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start">
+                      <Mail className="w-5 h-5 text-gray-400 mt-0.5 mr-3 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Email Contact</p>
+                        <a href={`mailto:${mentorData.user?.email}`} className="text-blue-600 hover:underline">{mentorData.user?.email || 'N/A'}</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-10 text-gray-500">
+                  <p>Failed to load mentor details.</p>
+                </div>
+              )}
+            </div>
+            
+            {mentorData && (
+              <div className="p-4 border-t border-gray-100 bg-gray-50">
+                <a 
+                  href={`mailto:${mentorData.user?.email}`}
+                  className="w-full block text-center bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition"
+                >
+                  Contact Mentor
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
