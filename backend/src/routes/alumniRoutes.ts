@@ -19,6 +19,27 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
+// Get public stats (alumni count, mentors count)
+router.get('/stats/public', async (req, res) => {
+  try {
+    const alumniCount = await AlumniProfile.countDocuments();
+    const mentorsCount = await User.countDocuments({ role: 'mentor' });
+    
+    // Calculate unique companies
+    const uniqueCompanies = await AlumniProfile.distinct('company');
+    const companiesCount = uniqueCompanies.filter(c => c && c.trim() !== '').length;
+
+    res.json({
+      alumniCount,
+      mentorsCount,
+      companiesCount
+    });
+  } catch (err) {
+    console.error('Error fetching public stats:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get all alumni (with optional search and filter)
 router.get('/', async (req, res) => {
   try {

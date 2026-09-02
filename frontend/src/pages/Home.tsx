@@ -1,10 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Users, BookOpen, Trophy } from 'lucide-react';
 import AlumniSlider from '../components/AlumniSlider';
 
 const Home = () => {
+  const [stats, setStats] = useState({ alumniCount: 0, mentorsCount: 0, companiesCount: 0 });
+
+  useEffect(() => {
+    fetch('/api/alumni/stats/public')
+      .then(res => res.json())
+      .then(data => setStats(data))
+      .catch(err => console.error('Error fetching stats:', err));
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
@@ -56,7 +65,9 @@ const Home = () => {
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 text-blue-600">
                 <Users className="w-8 h-8" />
               </div>
-              <h3 className="text-4xl font-bold text-gray-900 mb-2">5,000+</h3>
+              <h3 className="text-4xl font-bold text-gray-900 mb-2">
+                {stats.alumniCount >= 1000 ? '1000+' : stats.alumniCount}
+              </h3>
               <p className="text-lg text-gray-600 font-medium">Registered Alumni</p>
             </div>
             
@@ -64,7 +75,9 @@ const Home = () => {
               <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4 text-indigo-600">
                 <Trophy className="w-8 h-8" />
               </div>
-              <h3 className="text-4xl font-bold text-gray-900 mb-2">50+</h3>
+              <h3 className="text-4xl font-bold text-gray-900 mb-2">
+                {stats.companiesCount > 0 ? stats.companiesCount + '+' : '0'}
+              </h3>
               <p className="text-lg text-gray-600 font-medium">Top Tech Companies</p>
             </div>
             
@@ -72,8 +85,10 @@ const Home = () => {
               <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4 text-purple-600">
                 <BookOpen className="w-8 h-8" />
               </div>
-              <h3 className="text-4xl font-bold text-gray-900 mb-2">10+</h3>
-              <p className="text-lg text-gray-600 font-medium">Active Mentorships</p>
+              <h3 className="text-4xl font-bold text-gray-900 mb-2">
+                {stats.mentorsCount >= 20 ? '20+' : stats.mentorsCount}
+              </h3>
+              <p className="text-lg text-gray-600 font-medium">Active Mentors</p>
             </div>
           </div>
         </div>
