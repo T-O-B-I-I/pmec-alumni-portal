@@ -112,7 +112,7 @@ router.post('/profile', auth, upload.single('photo'), async (req, res) => {
     // Handle file upload
     if (req.file) {
       // Create a URL path relative to the server
-      profileData.photoUrl = `http://localhost:5000/uploads/${req.file.filename}`;
+      profileData.photoUrl = `/uploads/${req.file.filename}`;
     }
     
     let profile = await AlumniProfile.findOne({ user: userId });

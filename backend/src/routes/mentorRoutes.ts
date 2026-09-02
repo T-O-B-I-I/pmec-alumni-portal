@@ -55,7 +55,7 @@ router.post('/profile', auth, authorizeRole('mentor'), upload.single('photo'), a
     };
 
     if (req.file) {
-      updateData.photoUrl = `http://localhost:5000/uploads/${req.file.filename}`;
+      updateData.photoUrl = `/uploads/${req.file.filename}`;
     }
     
     if (profile) {

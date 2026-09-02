@@ -71,6 +71,7 @@ const Profile = () => {
               mobileNumber: data.mobileNumber || '',
               branch: data.branch || '',
               specialization: data.specialization || '',
+              photoUrl: data.photoUrl || prev.photoUrl,
             }));
           })
           .catch(err => console.error(err));
