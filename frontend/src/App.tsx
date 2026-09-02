@@ -12,6 +12,7 @@ import About from './pages/About';
 import AdminDashboard from './pages/AdminDashboard';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import PublicProfile from './pages/PublicProfile';
+import Mentors from './pages/Mentors';
 import Footer from './components/Footer';
 
 import Privacy from './pages/Privacy';
@@ -29,6 +30,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/directory" element={<Directory />} />
+              <Route path="/mentors" element={<Mentors />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/about" element={<About />} />

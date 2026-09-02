@@ -56,6 +56,17 @@ router.post('/profile', auth, authorizeRole('mentor'), async (req, res) => {
   }
 });
 
+// Get all mentor profiles (for directory)
+router.get('/directory', async (req, res) => {
+  try {
+    const profiles = await MentorProfile.find().populate('user', 'name email role');
+    res.json(profiles);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
 // Get all mentors (Public/Alumni)
 router.get('/', async (req, res) => {
   try {

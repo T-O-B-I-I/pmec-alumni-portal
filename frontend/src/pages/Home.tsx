@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Users, BookOpen, Trophy } from 'lucide-react';
 import AlumniSlider from '../components/AlumniSlider';
+import GallerySlider from '../components/GallerySlider';
 
 const Home = () => {
   const [stats, setStats] = useState({ alumniCount: 0, mentorsCount: 0, companiesCount: 0 });
@@ -93,8 +94,13 @@ const Home = () => {
       </section>
 
       {/* Slider Section */}
-      <section className="bg-white pb-20">
+      <section className="bg-white pb-10">
         <AlumniSlider />
+      </section>
+
+      {/* Gallery Slider Section */}
+      <section className="bg-white pb-20 border-t border-gray-100">
+        <GallerySlider />
       </section>
     </div>
   );
