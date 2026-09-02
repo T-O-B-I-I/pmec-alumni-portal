@@ -10,7 +10,7 @@ const router = express.Router();
 // Delete Own Account Route
 router.delete('/me', auth, async (req, res) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     
     // Check if it's the hardcoded superadmin
     if (userId === 'superadmin-000') {
