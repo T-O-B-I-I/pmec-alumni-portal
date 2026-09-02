@@ -21,6 +21,7 @@ const Gallery = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [newImageUrl, setNewImageUrl] = useState('');
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/content/gallery')
@@ -145,6 +146,7 @@ const Gallery = () => {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: (idx % 6) * 0.1 }}
+                onClick={() => !isEditing && setSelectedImage(img)}
                 className="relative group rounded-2xl overflow-hidden aspect-square cursor-pointer border border-gray-100 shadow-sm"
               >
                 <img 
@@ -153,7 +155,7 @@ const Gallery = () => {
                   className={`w-full h-full object-cover transition-transform duration-500 ${!isEditing && 'group-hover:scale-110'}`}
                 />
                 {!isEditing && (
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                     <span className="text-white font-medium text-lg tracking-wider bg-white/20 px-6 py-2 rounded-full backdrop-blur-sm border border-white/30">View Image</span>
                   </div>
                 )}
@@ -170,6 +172,27 @@ const Gallery = () => {
                 )}
               </motion.div>
             ))}
+          </div>
+        )}
+
+        {/* Image Modal */}
+        {selectedImage && (
+          <div 
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 animate-fade-in"
+            onClick={() => setSelectedImage(null)}
+          >
+            <button 
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-6 right-6 text-white hover:text-gray-300 bg-black/50 p-2 rounded-full transition-colors z-[101]"
+            >
+              <X className="w-8 h-8" />
+            </button>
+            <img 
+              src={selectedImage} 
+              alt="Gallery Preview" 
+              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
           </div>
         )}
       </div>
