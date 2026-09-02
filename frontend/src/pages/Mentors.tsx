@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Briefcase, GraduationCap, Filter, Phone } from 'lucide-react';
+import { Search, MapPin, Briefcase, GraduationCap, Filter, Phone, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Mentors = () => {
@@ -111,6 +111,13 @@ const Mentors = () => {
                             <Phone className="w-4 h-4 mr-2 flex-shrink-0" />
                             <span className="truncate" title={profile.mobileNumber || 'Not specified'}>
                               {profile.mobileNumber || 'Not specified'}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center">
+                            <Mail className="w-4 h-4 mr-2 flex-shrink-0" />
+                            <span className="truncate" title={profile.user?.email || 'Not specified'}>
+                              {profile.user?.email || 'Not specified'}
                             </span>
                           </div>
                         </div>
