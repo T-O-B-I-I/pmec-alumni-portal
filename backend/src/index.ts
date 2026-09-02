@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 // Reloading backend due to UTF-16 fix in .env
 import cors from 'cors';
 import mongoose from 'mongoose';
@@ -40,6 +41,15 @@ app.use('/api/notices', noticeRoutes);
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
+});
+
+// Global Error Handler to catch multer and other errors
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Global Error Handler caught:', err);
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({ message: 'File upload error', error: err.message });
+  }
+  res.status(500).json({ message: 'Internal server error', error: err.message || err.toString() });
 });
 
 if (process.env.NODE_ENV !== 'production') {
