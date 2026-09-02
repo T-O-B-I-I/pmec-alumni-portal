@@ -17,6 +17,9 @@ const Profile = () => {
     batch: '',
     branch: '',
     graduationYear: '',
+    yearOfJoining: '',
+    mobileNumber: '',
+    specialization: '',
     professionalDetails: {
       jobProfile: '',
       company: '',
@@ -56,29 +59,46 @@ const Profile = () => {
 
     // Fetch existing profile
     if (user) {
-      fetch('/api/alumni', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-        .then(res => res.json())
-        .then(data => {
-          // Find the current user's profile
-          const myProfile = data.find((p: any) => p.user._id === user.id || p.user.id === user.id);
-          if (myProfile) {
+      if (user.role === 'mentor') {
+        fetch('/api/mentors/profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+          .then(res => res.json())
+          .then(data => {
             setFormData(prev => ({
               ...prev,
-              registrationNumber: myProfile.registrationNumber || '',
-              batch: myProfile.batch || '',
-              branch: myProfile.branch || '',
-              graduationYear: myProfile.graduationYear || '',
-              professionalDetails: myProfile.professionalDetails || prev.professionalDetails,
-              locationDetails: myProfile.locationDetails || prev.locationDetails,
-              socialLinks: myProfile.socialLinks || prev.socialLinks,
-              mentorId: myProfile.mentorId || '',
-              photoUrl: myProfile.photoUrl || prev.photoUrl,
+              yearOfJoining: data.yearOfJoining || '',
+              mobileNumber: data.mobileNumber || '',
+              branch: data.branch || '',
+              specialization: data.specialization || '',
             }));
-          }
+          })
+          .catch(err => console.error(err));
+      } else {
+        fetch('/api/alumni', {
+          headers: { 'Authorization': `Bearer ${token}` }
         })
-        .catch(err => console.error(err));
+          .then(res => res.json())
+          .then(data => {
+            // Find the current user's profile
+            const myProfile = data.find((p: any) => p.user._id === user.id || p.user.id === user.id);
+            if (myProfile) {
+              setFormData(prev => ({
+                ...prev,
+                registrationNumber: myProfile.registrationNumber || '',
+                batch: myProfile.batch || '',
+                branch: myProfile.branch || '',
+                graduationYear: myProfile.graduationYear || '',
+                professionalDetails: myProfile.professionalDetails || prev.professionalDetails,
+                locationDetails: myProfile.locationDetails || prev.locationDetails,
+                socialLinks: myProfile.socialLinks || prev.socialLinks,
+                mentorId: myProfile.mentorId || '',
+                photoUrl: myProfile.photoUrl || prev.photoUrl,
+              }));
+            }
+          })
+          .catch(err => console.error(err));
+      }
     }
   }, [user, token]);
 
@@ -116,39 +136,63 @@ const Profile = () => {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const submitData = new FormData();
-      submitData.append('registrationNumber', formData.registrationNumber);
-      submitData.append('batch', formData.batch);
-      submitData.append('branch', formData.branch);
-      submitData.append('graduationYear', formData.graduationYear);
-      submitData.append('mentorId', formData.mentorId);
-      
-      submitData.append('professionalDetails', JSON.stringify(formData.professionalDetails));
-      submitData.append('locationDetails', JSON.stringify(formData.locationDetails));
-      submitData.append('socialLinks', JSON.stringify(formData.socialLinks));
-      
-      if (formData.photo) {
-        submitData.append('photo', formData.photo);
-      }
-
-      const res = await fetch('/api/alumni/profile', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: submitData
-      });
-
-      if (res.ok) {
-        const updatedProfile = await res.json();
-        setFormData(prev => ({
-          ...prev,
-          photoUrl: updatedProfile.photoUrl || prev.photoUrl,
-          photo: null // clear pending file
-        }));
-        alert('Profile saved successfully!');
+      if (user?.role === 'mentor') {
+        // Submit Mentor Profile
+        const res = await fetch('/api/mentors/profile', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            yearOfJoining: formData.yearOfJoining,
+            mobileNumber: formData.mobileNumber,
+            branch: formData.branch,
+            specialization: formData.specialization
+          })
+        });
+        
+        if (res.ok) {
+          alert('Mentor Profile saved successfully!');
+        } else {
+          alert('Failed to save mentor profile');
+        }
       } else {
-        alert('Failed to save profile');
+        // Submit Alumni Profile
+        const submitData = new FormData();
+        submitData.append('registrationNumber', formData.registrationNumber);
+        submitData.append('batch', formData.batch);
+        submitData.append('branch', formData.branch);
+        submitData.append('graduationYear', formData.graduationYear);
+        submitData.append('mentorId', formData.mentorId);
+        
+        submitData.append('professionalDetails', JSON.stringify(formData.professionalDetails));
+        submitData.append('locationDetails', JSON.stringify(formData.locationDetails));
+        submitData.append('socialLinks', JSON.stringify(formData.socialLinks));
+        
+        if (formData.photo) {
+          submitData.append('photo', formData.photo);
+        }
+
+        const res = await fetch('/api/alumni/profile', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: submitData
+        });
+
+        if (res.ok) {
+          const updatedProfile = await res.json();
+          setFormData(prev => ({
+            ...prev,
+            photoUrl: updatedProfile.photoUrl || prev.photoUrl,
+            photo: null // clear pending file
+          }));
+          alert('Profile saved successfully!');
+        } else {
+          alert('Failed to save profile');
+        }
       }
     } catch (err) {
       console.error(err);
@@ -213,7 +257,13 @@ const Profile = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start mb-8 gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{user?.name}</h1>
-              <p className="text-gray-500 font-medium">{formData.branch ? `B.Tech - ${formData.branch}` : 'Branch not set'} • {formData.batch ? `Class of ${formData.batch}` : 'Batch not set'}</p>
+              <p className="text-gray-500 font-medium">
+                {user?.role === 'mentor' 
+                  ? (formData.branch ? `Faculty - ${formData.branch}` : 'Department not set')
+                  : (formData.branch ? `B.Tech - ${formData.branch}` : 'Branch not set')
+                }
+                {user?.role !== 'mentor' && ` • ${formData.batch ? `Class of ${formData.batch}` : 'Batch not set'}`}
+              </p>
             </div>
             <div className="flex gap-3">
               <button 
@@ -240,28 +290,50 @@ const Profile = () => {
           </div>
 
           {/* Tabs */}
-          <div className="flex border-b border-gray-200 mb-8 overflow-x-auto no-scrollbar">
-            {[
-              { id: 'personal', icon: GraduationCap, label: 'Personal & Academic' },
-              { id: 'professional', icon: Briefcase, label: 'Professional' },
-              { id: 'location', icon: MapPin, label: 'Location' },
-              { id: 'social', icon: Share2, label: 'Social & Contact' },
-              { id: 'mentor', icon: Users, label: 'Mentorship' },
-            ].map(tab => (
-              <button 
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center whitespace-nowrap pb-4 px-4 font-medium text-sm transition-colors ${activeTab === tab.id ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                <tab.icon className="w-4 h-4 mr-2" />
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          {user?.role !== 'mentor' && (
+            <div className="flex border-b border-gray-200 mb-8 overflow-x-auto no-scrollbar">
+              {[
+                { id: 'personal', icon: GraduationCap, label: 'Personal & Academic' },
+                { id: 'professional', icon: Briefcase, label: 'Professional' },
+                { id: 'location', icon: MapPin, label: 'Location' },
+                { id: 'social', icon: Share2, label: 'Social & Contact' },
+                { id: 'mentor', icon: Users, label: 'Mentorship' },
+              ].map(tab => (
+                <button 
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center whitespace-nowrap pb-4 px-4 font-medium text-sm transition-colors ${activeTab === tab.id ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  <tab.icon className="w-4 h-4 mr-2" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          )}
 
-          <div className="space-y-6">
-            {/* Personal Slab */}
-            {activeTab === 'personal' && (
+          {user?.role === 'mentor' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Year of Joining</label>
+                  <input type="text" value={formData.yearOfJoining} onChange={(e) => handleInputChange(null, 'yearOfJoining', e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" placeholder="e.g. 2010" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                  <input type="tel" value={formData.mobileNumber} onChange={(e) => handleInputChange(null, 'mobileNumber', e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" placeholder="+91 9876543210" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+                  <input type="text" value={formData.branch} onChange={(e) => handleInputChange(null, 'branch', e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" placeholder="e.g. CSE" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Specialization</label>
+                  <input type="text" value={formData.specialization} onChange={(e) => handleInputChange(null, 'specialization', e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" placeholder="e.g. Artificial Intelligence" />
+                </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Personal Slab */}
+              {activeTab === 'personal' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Registration Number</label>
@@ -389,7 +461,8 @@ const Profile = () => {
                 </div>
               </div>
             )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Users, BookOpen, UserCheck, Filter, Search } from 'lucide-react';
+import { Users, BookOpen, UserCheck, Filter, Search, Download } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { user, token } = useAuth();
@@ -13,7 +13,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || user.role !== 'coordinator') {
+    if (!user || !['coordinator', 'superadmin'].includes(user.role)) {
       navigate('/');
       return;
     }
@@ -56,6 +56,29 @@ const AdminDashboard = () => {
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading Admin Dashboard...</div>;
   }
+
+  const handleExport = async () => {
+    try {
+      const res = await fetch('/api/admin/export', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'alumni_data.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+      } else {
+        alert('Failed to export data');
+      }
+    } catch (err) {
+      console.error('Error exporting data', err);
+      alert('Error exporting data');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
@@ -112,7 +135,19 @@ const AdminDashboard = () => {
               <button type="button" className="p-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50">
                 <Filter className="w-5 h-5" />
               </button>
+              <button 
+                type="submit"
+                className="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors hidden sm:block"
+              >
+                Search
+              </button>
             </form>
+            <button 
+              onClick={handleExport}
+              className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors shadow-sm"
+            >
+              <Download className="w-4 h-4 mr-2" /> Export to Excel
+            </button>
           </div>
           
           <div className="overflow-x-auto">

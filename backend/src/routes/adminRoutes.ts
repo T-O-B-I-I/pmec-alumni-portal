@@ -2,11 +2,57 @@ import express from 'express';
 import { auth, authorizeRole } from '../middleware/auth';
 import User from '../models/User';
 import AlumniProfile from '../models/AlumniProfile';
+import exceljs from 'exceljs';
 
 const router = express.Router();
 
-// Middleware to ensure user is a coordinator (admin)
-router.use(auth, authorizeRole('coordinator'));
+// Middleware to ensure user is a coordinator (admin) or superadmin
+router.use(auth, authorizeRole('coordinator', 'superadmin'));
+
+// Export Alumni Data to Excel
+router.get('/export', async (req, res) => {
+  try {
+    const alumni = await AlumniProfile.find().populate('user', 'name email');
+    
+    const workbook = new exceljs.Workbook();
+    const worksheet = workbook.addWorksheet('Alumni Data');
+    
+    worksheet.columns = [
+      { header: 'Name', key: 'name', width: 25 },
+      { header: 'Email', key: 'email', width: 30 },
+      { header: 'Registration Number', key: 'regNo', width: 20 },
+      { header: 'Branch', key: 'branch', width: 20 },
+      { header: 'Batch', key: 'batch', width: 15 },
+      { header: 'Company', key: 'company', width: 25 },
+      { header: 'Job Profile', key: 'jobProfile', width: 25 },
+      { header: 'City', key: 'city', width: 20 },
+      { header: 'Phone', key: 'phone', width: 15 }
+    ];
+
+    alumni.forEach(profile => {
+      worksheet.addRow({
+        name: (profile.user as any)?.name || 'N/A',
+        email: (profile.user as any)?.email || 'N/A',
+        regNo: profile.registrationNumber,
+        branch: profile.branch,
+        batch: profile.batch,
+        company: profile.professionalDetails?.company,
+        jobProfile: profile.professionalDetails?.jobProfile,
+        city: profile.locationDetails?.city,
+        phone: profile.socialLinks?.phone
+      });
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=' + 'alumni_data.xlsx');
+    
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error('Error generating excel:', err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
 
 // Get Dashboard Stats
 router.get('/stats', async (req, res) => {
