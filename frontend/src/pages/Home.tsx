@@ -1,18 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Users, BookOpen, Trophy } from 'lucide-react';
+import { ArrowRight, Users, BookOpen, Trophy, FileText, Calendar } from 'lucide-react';
 import AlumniSlider from '../components/AlumniSlider';
 import GallerySlider from '../components/GallerySlider';
 
 const Home = () => {
   const [stats, setStats] = useState({ alumniCount: 0, mentorsCount: 0, companiesCount: 0 });
 
+  const [notices, setNotices] = useState<any[]>([]);
+
   useEffect(() => {
     fetch('/api/alumni/stats/public')
       .then(res => res.json())
       .then(data => setStats(data))
       .catch(err => console.error('Error fetching stats:', err));
+
+    fetch('/api/notices')
+      .then(res => res.json())
+      .then(data => setNotices(data))
+      .catch(err => console.error('Error fetching notices:', err));
   }, []);
 
   return (
@@ -89,6 +96,53 @@ const Home = () => {
               </h3>
               <p className="text-lg text-gray-600 font-medium">Active Mentors</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Notice Board Section */}
+      <section className="py-20 bg-gray-50 border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Notice Board & Events</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Stay updated with the latest announcements, upcoming alumni meets, and important college events.
+            </p>
+          </div>
+          
+          <div className="max-w-4xl mx-auto">
+            {notices.length === 0 ? (
+              <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-100 text-center">
+                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-medium text-gray-900 mb-2">No active notices</h3>
+                <p className="text-gray-500">Check back later for upcoming events and announcements.</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {notices.map((notice) => (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    key={notice._id} 
+                    className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+                      <h3 className="text-2xl font-bold text-gray-900">{notice.title}</h3>
+                      <div className="flex items-center text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full whitespace-nowrap">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        {new Date(notice.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </div>
+                    </div>
+                    <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{notice.content}</p>
+                    <div className="mt-6 pt-4 border-t border-gray-50 text-sm text-gray-500 font-medium">
+                      Posted by {notice.author?.name || 'Coordinator'}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>

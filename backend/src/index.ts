@@ -17,7 +17,8 @@ import alumniRoutes from './routes/alumniRoutes';
 import adminRoutes from './routes/adminRoutes';
 import mentorRoutes from './routes/mentorRoutes';
 import superAdminRoutes from './routes/superAdminRoutes';
-import contentRoutes from './routes/contentRoutes';
+import siteContentRoutes from './routes/siteContentRoutes';
+import noticeRoutes from './routes/noticeRoutes';
 import path from 'path';
 
 // Connect to MongoDB
@@ -34,7 +35,8 @@ app.use('/api/alumni', alumniRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/mentors', mentorRoutes);
 app.use('/api/superadmin', superAdminRoutes);
-app.use('/api/content', contentRoutes);
+app.use('/api/content', siteContentRoutes);
+app.use('/api/notices', noticeRoutes);
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
