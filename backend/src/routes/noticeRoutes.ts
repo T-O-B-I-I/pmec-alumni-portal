@@ -52,4 +52,25 @@ router.delete('/:id', auth, authorizeRole('coordinator', 'superadmin'), async (r
   }
 });
 
+// Update a notice (Coordinator/SuperAdmin)
+router.put('/:id', auth, authorizeRole('coordinator', 'superadmin'), async (req, res) => {
+  try {
+    const { title, content } = req.body;
+    
+    const notice = await Notice.findById(req.params.id);
+    if (!notice) {
+      return res.status(404).json({ message: 'Notice not found' });
+    }
+
+    notice.title = title || notice.title;
+    notice.content = content || notice.content;
+
+    await notice.save();
+    res.json(notice);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
 export default router;

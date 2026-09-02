@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Users, BookOpen, UserCheck, Filter, Search, Download, Megaphone, Trash2 } from 'lucide-react';
+import { Users, BookOpen, UserCheck, Filter, Search, Download, Megaphone, Trash2, Edit2 } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { user, token } = useAuth();
@@ -15,7 +15,20 @@ const AdminDashboard = () => {
   // Notice Board state
   const [notices, setNotices] = useState<any[]>([]);
   const [newNotice, setNewNotice] = useState({ title: '', content: '' });
+  const [editingNoticeId, setEditingNoticeId] = useState<string | null>(null);
   const [submittingNotice, setSubmittingNotice] = useState(false);
+
+  const renderContentWithLinks = (text: string) => {
+    if (!text) return null;
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    return parts.map((part, i) => {
+      if (part.match(urlRegex)) {
+        return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{part}</a>;
+      }
+      return part;
+    });
+  };
 
   useEffect(() => {
     if (!user || !['coordinator', 'superadmin'].includes(user.role)) {
@@ -87,13 +100,16 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleCreateNotice = async (e: React.FormEvent) => {
+  const handleSaveNotice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNotice.title || !newNotice.content) return;
     setSubmittingNotice(true);
     try {
-      const res = await fetch('/api/notices', {
-        method: 'POST',
+      const url = editingNoticeId ? `/api/notices/${editingNoticeId}` : '/api/notices';
+      const method = editingNoticeId ? 'PUT' : 'POST';
+      
+      const res = await fetch(url, {
+        method,
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}` 
@@ -101,18 +117,29 @@ const AdminDashboard = () => {
         body: JSON.stringify(newNotice)
       });
       if (res.ok) {
-        const created = await res.json();
-        setNotices([created, ...notices]);
+        const saved = await res.json();
+        if (editingNoticeId) {
+          setNotices(notices.map(n => n._id === editingNoticeId ? saved : n));
+        } else {
+          setNotices([saved, ...notices]);
+        }
         setNewNotice({ title: '', content: '' });
+        setEditingNoticeId(null);
       } else {
-        alert('Failed to create notice');
+        alert('Failed to save notice');
       }
     } catch (err) {
       console.error(err);
-      alert('Error creating notice');
+      alert('Error saving notice');
     } finally {
       setSubmittingNotice(false);
     }
+  };
+
+  const handleEditClick = (notice: any) => {
+    setNewNotice({ title: notice.title, content: notice.content });
+    setEditingNoticeId(notice._id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDeleteNotice = async (id: string) => {
@@ -178,8 +205,8 @@ const AdminDashboard = () => {
           </div>
           <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-1 border-r border-gray-100 pr-0 lg:pr-8">
-              <h3 className="font-semibold text-gray-900 mb-4">Post New Notice</h3>
-              <form onSubmit={handleCreateNotice} className="space-y-4">
+              <h3 className="font-semibold text-gray-900 mb-4">{editingNoticeId ? 'Edit Notice' : 'Post New Notice'}</h3>
+              <form onSubmit={handleSaveNotice} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                   <input
@@ -202,13 +229,27 @@ const AdminDashboard = () => {
                     placeholder="Provide details about the event..."
                   />
                 </div>
-                <button
-                  type="submit"
-                  disabled={submittingNotice}
-                  className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition"
-                >
-                  {submittingNotice ? 'Posting...' : 'Post Notice'}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={submittingNotice}
+                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+                  >
+                    {submittingNotice ? 'Saving...' : (editingNoticeId ? 'Update Notice' : 'Post Notice')}
+                  </button>
+                  {editingNoticeId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingNoticeId(null);
+                        setNewNotice({ title: '', content: '' });
+                      }}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </form>
             </div>
             
@@ -225,15 +266,24 @@ const AdminDashboard = () => {
                         <p className="text-sm text-gray-500 mb-2">
                           {new Date(notice.date).toLocaleDateString()} • By {notice.author?.name || 'Admin'}
                         </p>
-                        <p className="text-gray-700 text-sm whitespace-pre-wrap">{notice.content}</p>
+                        <p className="text-gray-700 text-sm whitespace-pre-wrap">{renderContentWithLinks(notice.content)}</p>
                       </div>
-                      <button 
-                        onClick={() => handleDeleteNotice(notice._id)}
-                        className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition ml-4 flex-shrink-0"
-                        title="Delete Notice"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                      <div className="flex ml-4 flex-shrink-0">
+                        <button 
+                          onClick={() => handleEditClick(notice)}
+                          className="text-blue-500 hover:text-blue-700 p-2 rounded-full hover:bg-blue-50 transition"
+                          title="Edit Notice"
+                        >
+                          <Edit2 className="w-5 h-5" />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteNotice(notice._id)}
+                          className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition"
+                          title="Delete Notice"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

@@ -21,6 +21,18 @@ const Home = () => {
       .catch(err => console.error('Error fetching notices:', err));
   }, []);
 
+  const renderContentWithLinks = (text: string) => {
+    if (!text) return null;
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    return parts.map((part, i) => {
+      if (part.match(urlRegex)) {
+        return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{part}</a>;
+      }
+      return part;
+    });
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
@@ -125,7 +137,7 @@ const Home = () => {
                       {new Date(notice.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 mb-3">{notice.title}</h3>
-                    <p className="text-gray-600 flex-grow whitespace-pre-wrap line-clamp-4">{notice.content}</p>
+                    <p className="text-gray-600 flex-grow whitespace-pre-wrap line-clamp-4">{renderContentWithLinks(notice.content)}</p>
                   </div>
                 </div>
               ))
