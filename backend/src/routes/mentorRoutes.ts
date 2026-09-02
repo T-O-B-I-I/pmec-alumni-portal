@@ -9,21 +9,8 @@ import fs from 'fs';
 
 const router = express.Router();
 
-const uploadDir = path.join(__dirname, '../../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Configure multer for file uploads in memory (for serverless environments like Vercel)
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // Get mentor profile
@@ -62,7 +49,9 @@ router.post('/profile', auth, authorizeRole('mentor'), upload.single('photo'), a
     };
 
     if (req.file) {
-      updateData.photoUrl = `/uploads/${req.file.filename}`;
+      const base64Data = req.file.buffer.toString('base64');
+      const mimeType = req.file.mimetype;
+      updateData.photoUrl = `data:${mimeType};base64,${base64Data}`;
     } else if (req.body.photoUrl) {
       updateData.photoUrl = req.body.photoUrl;
     }

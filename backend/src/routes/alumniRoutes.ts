@@ -9,21 +9,8 @@ import fs from 'fs';
 
 const router = express.Router();
 
-const uploadDir = path.join(__dirname, '../../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Configure multer for file uploads in memory (for serverless environments like Vercel)
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // Get public stats (alumni count, mentors count)
@@ -123,10 +110,11 @@ router.post('/profile', auth, upload.single('photo'), async (req, res) => {
     const socLinks = safeParse(req.body.socialLinks);
     if (socLinks) profileData.socialLinks = socLinks;
 
-    // Handle file upload
+    // Handle file upload (Base64 for Serverless/Vercel)
     if (req.file) {
-      // Create a URL path relative to the server
-      profileData.photoUrl = `/uploads/${req.file.filename}`;
+      const base64Data = req.file.buffer.toString('base64');
+      const mimeType = req.file.mimetype;
+      profileData.photoUrl = `data:${mimeType};base64,${base64Data}`;
     } else if (req.body.photoUrl) {
       profileData.photoUrl = req.body.photoUrl;
     }
