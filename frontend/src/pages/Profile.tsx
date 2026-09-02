@@ -169,7 +169,8 @@ const Profile = () => {
           }));
           alert('Mentor Profile saved successfully!');
         } else {
-          alert('Failed to save mentor profile');
+          const errData = await res.json().catch(() => ({}));
+          alert(`Failed to save mentor profile: ${errData.error || errData.message || 'Unknown error'}`);
         }
       } else {
         // Submit Alumni Profile
@@ -208,12 +209,13 @@ const Profile = () => {
           }));
           alert('Profile saved successfully!');
         } else {
-          alert('Failed to save profile');
+          const errData = await res.json().catch(() => ({}));
+          alert(`Failed to save profile: ${errData.error || errData.message || 'Unknown error'}`);
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('An error occurred while saving.');
+      alert(`An error occurred while saving: ${err.message}`);
     } finally {
       setLoading(false);
     }

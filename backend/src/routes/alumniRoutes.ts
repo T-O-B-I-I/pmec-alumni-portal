@@ -147,9 +147,9 @@ router.post('/profile', auth, upload.single('photo'), async (req, res) => {
     }
     
     res.json(profile);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server Error' });
+  } catch (err: any) {
+    console.error('Alumni profile save error:', err);
+    res.status(500).json({ message: 'Server Error', error: err.message });
   }
 });
 
