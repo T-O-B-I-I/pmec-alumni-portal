@@ -194,6 +194,32 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleRejectReset = async (userId: string) => {
+    if (!window.confirm("Are you sure you want to reject this password reset request?")) return;
+    setResetting(userId);
+    try {
+      const res = await fetch('/api/auth/reject-reset', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ userId })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+        setResetRequests(resetRequests.filter(r => r._id !== userId));
+      } else {
+        alert(data.message || 'Failed to reject reset request');
+      }
+    } catch (err) {
+      alert('Network error while rejecting request');
+    } finally {
+      setResetting(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -354,13 +380,22 @@ const AdminDashboard = () => {
                         <td className="p-4 text-gray-600">{reqUser.email}</td>
                         <td className="p-4 text-gray-600 capitalize">{reqUser.role}</td>
                         <td className="p-4 text-right">
-                          <button
-                            onClick={() => handleResetPassword(reqUser._id)}
-                            disabled={resetting === reqUser._id}
-                            className="text-blue-600 hover:text-blue-800 font-medium px-3 py-1 rounded bg-blue-50 hover:bg-blue-100 transition-colors disabled:opacity-50"
-                          >
-                            {resetting === reqUser._id ? 'Resetting...' : 'Approve Reset'}
-                          </button>
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => handleResetPassword(reqUser._id)}
+                              disabled={resetting === reqUser._id}
+                              className="text-white bg-green-600 hover:bg-green-700 font-medium px-3 py-1.5 rounded-lg text-sm transition-colors shadow-sm disabled:opacity-50"
+                            >
+                              {resetting === reqUser._id ? 'Processing...' : 'Approve Reset'}
+                            </button>
+                            <button
+                              onClick={() => handleRejectReset(reqUser._id)}
+                              disabled={resetting === reqUser._id}
+                              className="text-white bg-red-600 hover:bg-red-700 font-medium px-3 py-1.5 rounded-lg text-sm transition-colors shadow-sm disabled:opacity-50"
+                            >
+                              Reject
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

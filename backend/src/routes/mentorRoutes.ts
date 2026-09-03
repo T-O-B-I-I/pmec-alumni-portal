@@ -17,12 +17,13 @@ const upload = multer({ storage: storage });
 router.get('/profile', auth, authorizeRole('mentor'), async (req, res) => {
   try {
     const userId = (req as any).user.userId;
-    let profile = await MentorProfile.findOne({ user: userId });
+    let profile = await MentorProfile.findOne({ user: userId }).populate('user', 'name email role');
     
     if (!profile) {
       // Create empty profile if it doesn't exist
       profile = new MentorProfile({ user: userId });
       await profile.save();
+      profile = await MentorProfile.findById(profile._id).populate('user', 'name email role');
     }
     
     res.json(profile);
@@ -36,7 +37,17 @@ router.get('/profile', auth, authorizeRole('mentor'), async (req, res) => {
 router.post('/profile', auth, authorizeRole('mentor'), upload.single('photo'), async (req, res) => {
   try {
     const userId = (req as any).user.userId;
-    const { yearOfJoining, mobileNumber, branch, specialization } = req.body;
+    const { yearOfJoining, mobileNumber, branch, specialization, email } = req.body;
+
+    // If email is provided, check for uniqueness and update User
+    if (email && email.trim() !== '') {
+      const normalizedEmail = email.trim().toLowerCase();
+      const existingUser = await User.findOne({ email: normalizedEmail, _id: { $ne: userId } });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Email address is already in use by another account' });
+      }
+      await User.findByIdAndUpdate(userId, { email: normalizedEmail });
+    }
 
     let profile = await MentorProfile.findOne({ user: userId });
     
@@ -67,7 +78,8 @@ router.post('/profile', auth, authorizeRole('mentor'), upload.single('photo'), a
       await profile.save();
     }
 
-    res.json(profile);
+    const populatedProfile = await MentorProfile.findById(profile?._id).populate('user', 'name email role');
+    res.json(populatedProfile);
   } catch (err: any) {
     console.error('Mentor profile save error:', err);
     res.status(500).json({ message: 'Server Error', error: err.message });

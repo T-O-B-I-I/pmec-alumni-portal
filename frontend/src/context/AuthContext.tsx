@@ -14,6 +14,7 @@ interface AuthContextType {
   token: string | null;
   login: (token: string, user: User) => void;
   logout: () => void;
+  updateUser: (updatedFields: Partial<User>) => void;
   isAuthenticated: boolean;
 }
 
@@ -45,6 +46,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('user', JSON.stringify(newUser));
   };
 
+  const updateUser = (updatedFields: Partial<User>) => {
+    setUser(prev => {
+      if (!prev) return null;
+      const nextUser = { ...prev, ...updatedFields };
+      localStorage.setItem('user', JSON.stringify(nextUser));
+      return nextUser;
+    });
+  };
+
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -53,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateUser, isAuthenticated: !!token }}>
       {children}
     </AuthContext.Provider>
   );

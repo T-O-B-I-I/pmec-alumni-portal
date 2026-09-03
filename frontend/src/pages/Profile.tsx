@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
-  const { user, token, logout } = useAuth();
+  const { user, token, logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('personal');
   const [loading, setLoading] = useState(false);
@@ -19,7 +19,12 @@ const Profile = () => {
   });
   const [passLoading, setPassLoading] = useState(false);
 
+  const [newEmail, setNewEmail] = useState('');
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [requestLoading, setRequestLoading] = useState(false);
+
   const [formData, setFormData] = useState({
+    email: user?.email || '',
     registrationNumber: '',
     batch: '',
     branch: '',
@@ -72,14 +77,15 @@ const Profile = () => {
         })
           .then(res => res.json())
           .then(data => {
-            setFormData(prev => ({
-              ...prev,
-              yearOfJoining: data.yearOfJoining || '',
-              mobileNumber: data.mobileNumber || '',
-              branch: data.branch || '',
-              specialization: data.specialization || '',
-              photoUrl: data.photoUrl || prev.photoUrl,
-            }));
+              setFormData(prev => ({
+                ...prev,
+                yearOfJoining: data.yearOfJoining || '',
+                mobileNumber: data.mobileNumber || '',
+                branch: data.branch || '',
+                specialization: data.specialization || '',
+                email: data.user?.email || user?.email || '',
+                photoUrl: data.photoUrl || prev.photoUrl,
+              }));
           })
           .catch(err => console.error(err));
       } else {
@@ -151,6 +157,7 @@ const Profile = () => {
         submitData.append('mobileNumber', formData.mobileNumber);
         submitData.append('branch', formData.branch);
         submitData.append('specialization', formData.specialization);
+        submitData.append('email', formData.email);
         
         if (formData.photo) {
           submitData.append('photo', formData.photo);
@@ -169,8 +176,12 @@ const Profile = () => {
           setFormData(prev => ({
             ...prev,
             photoUrl: data.photoUrl || prev.photoUrl,
+            email: data.user?.email || prev.email,
             photo: null
           }));
+          if (data.user?.email) {
+            updateUser({ email: data.user.email });
+          }
           alert('Mentor Profile saved successfully!');
         } else {
           const errData = await res.json().catch(() => ({}));
@@ -278,6 +289,61 @@ const Profile = () => {
     }
   };
 
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEmail || !newEmail.trim()) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+    setEmailLoading(true);
+    try {
+      const res = await fetch('/api/auth/update-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ newEmail })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+        updateUser({ email: data.email });
+        setFormData(prev => ({ ...prev, email: data.email }));
+        setNewEmail('');
+      } else {
+        alert(data.message || 'Failed to update email');
+      }
+    } catch (err) {
+      alert('Network error while updating email');
+    } finally {
+      setEmailLoading(false);
+    }
+  };
+
+  const handleRequestReset = async () => {
+    if (!window.confirm("Request coordinator to reset your password? Once approved by the coordinator, your password will be reset to <FirstName>123.")) return;
+    setRequestLoading(true);
+    try {
+      const res = await fetch('/api/auth/request-reset', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+      } else {
+        alert(data.message || 'Failed to request reset');
+      }
+    } catch (err) {
+      alert('Network error while requesting reset');
+    } finally {
+      setRequestLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-100">
@@ -343,51 +409,63 @@ const Profile = () => {
           </div>
 
           {/* Tabs */}
-          {user?.role !== 'mentor' && (
-            <div className="flex border-b border-gray-200 mb-8 overflow-x-auto no-scrollbar">
-              {[
-                { id: 'personal', icon: GraduationCap, label: 'Personal & Academic' },
-                { id: 'professional', icon: Briefcase, label: 'Professional' },
-                { id: 'location', icon: MapPin, label: 'Location' },
-                { id: 'social', icon: Share2, label: 'Social & Contact' },
-                { id: 'mentor', icon: Users, label: 'Mentorship' },
-                { id: 'security', icon: Lock, label: 'Security' },
-              ].map(tab => (
-                <button 
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center whitespace-nowrap pb-4 px-4 font-medium text-sm transition-colors ${activeTab === tab.id ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                  <tab.icon className="w-4 h-4 mr-2" />
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="flex border-b border-gray-200 mb-8 overflow-x-auto no-scrollbar">
+            {(user?.role === 'mentor' ? [
+              { id: 'personal', icon: Briefcase, label: 'Faculty Profile' },
+              { id: 'security', icon: Lock, label: 'Security & Password' },
+            ] : [
+              { id: 'personal', icon: GraduationCap, label: 'Personal & Academic' },
+              { id: 'professional', icon: Briefcase, label: 'Professional' },
+              { id: 'location', icon: MapPin, label: 'Location' },
+              { id: 'social', icon: Share2, label: 'Social & Contact' },
+              { id: 'mentor', icon: Users, label: 'Mentorship' },
+              { id: 'security', icon: Lock, label: 'Security & Password' },
+            ]).map(tab => (
+              <button 
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center whitespace-nowrap pb-4 px-4 font-medium text-sm transition-colors ${activeTab === tab.id ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <tab.icon className="w-4 h-4 mr-2" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-          {user?.role === 'mentor' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Year of Joining</label>
-                  <input type="text" value={formData.yearOfJoining} onChange={(e) => handleInputChange(null, 'yearOfJoining', e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" placeholder="e.g. 2010" />
+          <div className="space-y-6">
+            {/* Faculty / Personal Slab */}
+            {activeTab === 'personal' && (
+              user?.role === 'mentor' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                    <input 
+                      type="email" 
+                      value={formData.email} 
+                      onChange={(e) => handleInputChange(null, 'email', e.target.value)} 
+                      className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" 
+                      placeholder="faculty@pmec.ac.in" 
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Used to log in to your account.</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                    <input type="tel" value={formData.mobileNumber} onChange={(e) => handleInputChange(null, 'mobileNumber', e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" placeholder="+91 9876543210" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Branch / Department</label>
+                    <input type="text" value={formData.branch} onChange={(e) => handleInputChange(null, 'branch', e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" placeholder="e.g. CSE" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Specialization</label>
+                    <input type="text" value={formData.specialization} onChange={(e) => handleInputChange(null, 'specialization', e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" placeholder="e.g. Artificial Intelligence" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Year of Joining</label>
+                    <input type="text" value={formData.yearOfJoining} onChange={(e) => handleInputChange(null, 'yearOfJoining', e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" placeholder="e.g. 2010" />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
-                  <input type="tel" value={formData.mobileNumber} onChange={(e) => handleInputChange(null, 'mobileNumber', e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" placeholder="+91 9876543210" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
-                  <input type="text" value={formData.branch} onChange={(e) => handleInputChange(null, 'branch', e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" placeholder="e.g. CSE" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Specialization</label>
-                  <input type="text" value={formData.specialization} onChange={(e) => handleInputChange(null, 'specialization', e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" placeholder="e.g. Artificial Intelligence" />
-                </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {/* Personal Slab */}
-              {activeTab === 'personal' && (
+              ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Registration Number</label>
@@ -406,6 +484,7 @@ const Profile = () => {
                   <input type="text" value={formData.graduationYear} onChange={(e) => handleInputChange(null, 'graduationYear', e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" placeholder="e.g. 2024" />
                 </div>
               </div>
+              )
             )}
 
             {/* Professional Slab */}
@@ -518,53 +597,98 @@ const Profile = () => {
 
             {/* Security Slab */}
             {activeTab === 'security' && (
-              <div className="animate-fade-in bg-gray-50 p-6 rounded-xl border border-gray-200 max-w-lg">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Change Password</h3>
-                <p className="text-sm text-gray-500 mb-6">Update your account password. Make sure it's secure.</p>
-                
-                <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-                    <input 
-                      type="password" 
-                      required
-                      value={passwordData.oldPassword} 
-                      onChange={(e) => setPasswordData(prev => ({...prev, oldPassword: e.target.value}))}
-                      className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" 
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                    <input 
-                      type="password" 
-                      required
-                      value={passwordData.newPassword} 
-                      onChange={(e) => setPasswordData(prev => ({...prev, newPassword: e.target.value}))}
-                      className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" 
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-                    <input 
-                      type="password" 
-                      required
-                      value={passwordData.confirmPassword} 
-                      onChange={(e) => setPasswordData(prev => ({...prev, confirmPassword: e.target.value}))}
-                      className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" 
-                    />
-                  </div>
+              <div className="space-y-8 animate-fade-in">
+                {/* Change Password Form */}
+                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 max-w-lg">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Change Password</h3>
+                  <p className="text-sm text-gray-500 mb-6">Update your account password with your current password.</p>
+                  
+                  <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                      <input 
+                        type="password" 
+                        required
+                        value={passwordData.oldPassword} 
+                        onChange={(e) => setPasswordData(prev => ({...prev, oldPassword: e.target.value}))}
+                        className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                      <input 
+                        type="password" 
+                        required
+                        value={passwordData.newPassword} 
+                        onChange={(e) => setPasswordData(prev => ({...prev, newPassword: e.target.value}))}
+                        className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                      <input 
+                        type="password" 
+                        required
+                        value={passwordData.confirmPassword} 
+                        onChange={(e) => setPasswordData(prev => ({...prev, confirmPassword: e.target.value}))}
+                        className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" 
+                      />
+                    </div>
+                    <button 
+                      type="submit" 
+                      disabled={passLoading}
+                      className="w-full mt-4 bg-blue-600 text-white py-2 px-4 rounded-md shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                    >
+                      {passLoading ? 'Updating...' : 'Update Password'}
+                    </button>
+                  </form>
+                </div>
+
+                {/* Update Email Address Form */}
+                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 max-w-lg">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Change Login Email</h3>
+                  <p className="text-sm text-gray-500 mb-4">Current Email: <span className="font-semibold text-gray-800">{user?.email}</span></p>
+                  
+                  <form onSubmit={handleEmailSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">New Email Address</label>
+                      <input 
+                        type="email" 
+                        required
+                        value={newEmail} 
+                        onChange={(e) => setNewEmail(e.target.value)}
+                        className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" 
+                        placeholder="newemail@example.com"
+                      />
+                    </div>
+                    <button 
+                      type="submit" 
+                      disabled={emailLoading}
+                      className="w-full bg-blue-600 text-white py-2 px-4 rounded-md shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                    >
+                      {emailLoading ? 'Updating...' : 'Update Email Address'}
+                    </button>
+                  </form>
+                </div>
+
+                {/* Request Coordinator Reset */}
+                <div className="bg-blue-50 p-6 rounded-xl border border-blue-200 max-w-lg">
+                  <h3 className="text-lg font-bold text-blue-900 mb-2">Forgot Current Password?</h3>
+                  <p className="text-sm text-blue-700 mb-4">
+                    If you have forgotten your current password, you can request the Coordinator to reset your password. Once approved by the Coordinator, your password will automatically become your First Name followed by 123.
+                  </p>
                   <button 
-                    type="submit" 
-                    disabled={passLoading}
-                    className="w-full mt-4 bg-blue-600 text-white py-2 px-4 rounded-md shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                    type="button"
+                    onClick={handleRequestReset}
+                    disabled={requestLoading}
+                    className="bg-blue-600 text-white py-2 px-4 rounded-md shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
                   >
-                    {passLoading ? 'Updating...' : 'Update Password'}
+                    {requestLoading ? 'Sending Request...' : 'Request Password Reset from Coordinator'}
                   </button>
-                </form>
+                </div>
               </div>
             )}
             </div>
-          )}
         </div>
       </div>
     </div>

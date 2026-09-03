@@ -199,4 +199,69 @@ router.post('/reset-password', auth, authorizeRole('coordinator', 'superadmin'),
   }
 });
 
+// Reject Password Reset Request (Coordinator / Superadmin)
+router.post('/reject-reset', auth, authorizeRole('coordinator', 'superadmin'), async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.resetPasswordRequested = false;
+    await user.save();
+
+    res.json({ message: `Password reset request for ${user.name} has been rejected.` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// Request Password Reset while logged in (For mentors & alumni)
+router.post('/request-reset', auth, async (req, res) => {
+  try {
+    const userId = (req as any).user.userId;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.resetPasswordRequested = true;
+    await user.save();
+
+    res.json({ message: 'Password reset request sent to coordinators successfully.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// Update Email Address (Logged in User)
+router.post('/update-email', auth, async (req, res) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { newEmail } = req.body;
+
+    if (!newEmail || !newEmail.trim()) {
+      return res.status(400).json({ message: 'Please provide a valid email address' });
+    }
+
+    const normalizedEmail = newEmail.trim().toLowerCase();
+
+    // Check if email already in use
+    const existing = await User.findOne({ email: normalizedEmail, _id: { $ne: userId } });
+    if (existing) {
+      return res.status(400).json({ message: 'Email address is already in use by another account' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.email = normalizedEmail;
+    await user.save();
+
+    res.json({ message: 'Email address updated successfully', email: user.email });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
 export default router;
