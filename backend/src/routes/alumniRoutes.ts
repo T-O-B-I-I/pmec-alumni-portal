@@ -21,7 +21,7 @@ router.get('/stats/public', async (req, res) => {
     
     // Calculate unique companies
     const uniqueCompanies = await AlumniProfile.distinct('company');
-    const companiesCount = uniqueCompanies.filter(c => c && c.trim() !== '').length;
+    const companiesCount = uniqueCompanies.filter(c => typeof c === 'string' && c.trim() !== '').length;
 
     res.json({
       alumniCount,
