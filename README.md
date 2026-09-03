@@ -43,8 +43,8 @@ Create a `.env` file in the `backend/` directory with the following variables:
 MONGODB_URI=your_mongodb_connection_string
 PORT=5000
 JWT_SECRET=your_secret_key
-SUPERADMIN_EMAIL=superadmin@pmec.edu
-SUPERADMIN_PASSWORD=supersecret
+SUPERADMIN_EMAIL=xyz@gmail.com
+SUPERADMIN_PASSWORD=psswd
 ```
 
 ### Installation
