@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Save, MapPin, Briefcase, GraduationCap, Share2, Users, Trash2 } from 'lucide-react';
+import { Camera, Save, MapPin, Briefcase, GraduationCap, Share2, Users, Trash2, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,6 +11,13 @@ const Profile = () => {
   const [mentors, setMentors] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  const [passwordData, setPasswordData] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passLoading, setPassLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     registrationNumber: '',
@@ -238,6 +245,39 @@ const Profile = () => {
     }
   };
 
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert("New passwords do not match!");
+      return;
+    }
+    setPassLoading(true);
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          oldPassword: passwordData.oldPassword,
+          newPassword: passwordData.newPassword
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+        setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+      } else {
+        alert(data.message || 'Failed to change password');
+      }
+    } catch (err) {
+      alert('An error occurred while changing password.');
+    } finally {
+      setPassLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-100">
@@ -311,6 +351,7 @@ const Profile = () => {
                 { id: 'location', icon: MapPin, label: 'Location' },
                 { id: 'social', icon: Share2, label: 'Social & Contact' },
                 { id: 'mentor', icon: Users, label: 'Mentorship' },
+                { id: 'security', icon: Lock, label: 'Security' },
               ].map(tab => (
                 <button 
                   key={tab.id}
@@ -472,6 +513,54 @@ const Profile = () => {
                     ))}
                   </select>
                 </div>
+              </div>
+            )}
+
+            {/* Security Slab */}
+            {activeTab === 'security' && (
+              <div className="animate-fade-in bg-gray-50 p-6 rounded-xl border border-gray-200 max-w-lg">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Change Password</h3>
+                <p className="text-sm text-gray-500 mb-6">Update your account password. Make sure it's secure.</p>
+                
+                <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                    <input 
+                      type="password" 
+                      required
+                      value={passwordData.oldPassword} 
+                      onChange={(e) => setPasswordData(prev => ({...prev, oldPassword: e.target.value}))}
+                      className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                    <input 
+                      type="password" 
+                      required
+                      value={passwordData.newPassword} 
+                      onChange={(e) => setPasswordData(prev => ({...prev, newPassword: e.target.value}))}
+                      className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                    <input 
+                      type="password" 
+                      required
+                      value={passwordData.confirmPassword} 
+                      onChange={(e) => setPasswordData(prev => ({...prev, confirmPassword: e.target.value}))}
+                      className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-white border" 
+                    />
+                  </div>
+                  <button 
+                    type="submit" 
+                    disabled={passLoading}
+                    className="w-full mt-4 bg-blue-600 text-white py-2 px-4 rounded-md shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  >
+                    {passLoading ? 'Updating...' : 'Update Password'}
+                  </button>
+                </form>
               </div>
             )}
             </div>

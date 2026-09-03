@@ -12,6 +12,10 @@ const AdminDashboard = () => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
+  // Password Reset state
+  const [resetRequests, setResetRequests] = useState<any[]>([]);
+  const [resetting, setResetting] = useState<string | null>(null);
+
   // Notice Board state
   const [notices, setNotices] = useState<any[]>([]);
   const [newNotice, setNewNotice] = useState({ title: '', content: '' });
@@ -38,19 +42,23 @@ const AdminDashboard = () => {
 
     const fetchData = async () => {
       try {
-        const [statsRes, alumniRes, noticesRes] = await Promise.all([
+        const [statsRes, alumniRes, noticesRes, resetRes] = await Promise.all([
           fetch('/api/admin/stats', {
             headers: { 'Authorization': `Bearer ${token}` }
           }),
           fetch('/api/alumni', {
             headers: { 'Authorization': `Bearer ${token}` }
           }),
-          fetch('/api/notices')
+          fetch('/api/notices'),
+          fetch('/api/auth/reset-requests', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
         ]);
         
         if (statsRes.ok) setStats(await statsRes.json());
         if (alumniRes.ok) setAlumni(await alumniRes.json());
         if (noticesRes.ok) setNotices(await noticesRes.json());
+        if (resetRes.ok) setResetRequests(await resetRes.json());
       } catch (err) {
         console.error('Failed to fetch admin data', err);
       } finally {
@@ -157,6 +165,32 @@ const AdminDashboard = () => {
     } catch (err) {
       console.error(err);
       alert('Error deleting notice');
+    }
+  };
+
+  const handleResetPassword = async (userId: string) => {
+    if (!window.confirm("Are you sure you want to reset this user's password? It will be changed to <FirstName>123")) return;
+    setResetting(userId);
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ userId })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+        setResetRequests(resetRequests.filter(r => r._id !== userId));
+      } else {
+        alert(data.message || 'Failed to reset password');
+      }
+    } catch (err) {
+      alert('Network error while resetting password');
+    } finally {
+      setResetting(null);
     }
   };
 
@@ -289,6 +323,51 @@ const AdminDashboard = () => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Password Resets Management */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-12">
+          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center">
+               Password Reset Requests
+            </h2>
+          </div>
+          <div className="p-6">
+            {resetRequests.length === 0 ? (
+              <p className="text-gray-500">No pending password reset requests.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider">
+                      <th className="p-4 font-medium">Name</th>
+                      <th className="p-4 font-medium">Email</th>
+                      <th className="p-4 font-medium">Role</th>
+                      <th className="p-4 font-medium text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {resetRequests.map((reqUser) => (
+                      <tr key={reqUser._id} className="hover:bg-gray-50 transition-colors">
+                        <td className="p-4 font-medium text-gray-900">{reqUser.name}</td>
+                        <td className="p-4 text-gray-600">{reqUser.email}</td>
+                        <td className="p-4 text-gray-600 capitalize">{reqUser.role}</td>
+                        <td className="p-4 text-right">
+                          <button
+                            onClick={() => handleResetPassword(reqUser._id)}
+                            disabled={resetting === reqUser._id}
+                            className="text-blue-600 hover:text-blue-800 font-medium px-3 py-1 rounded bg-blue-50 hover:bg-blue-100 transition-colors disabled:opacity-50"
+                          >
+                            {resetting === reqUser._id ? 'Resetting...' : 'Approve Reset'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
 
